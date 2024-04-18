@@ -1,0 +1,14 @@
+diffusers
+xformers
+imageio
+imageio[ffmpeg]
+opencv-python
+transformers
+gdown
+einops
+decord
+omegaconf
+safetensors
+gradio
+wandb
+termcolor
