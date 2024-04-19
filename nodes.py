@@ -30,6 +30,7 @@ from cameractrl.models.unet import UNet3DConditionModelPoseCond
 from cameractrl.models.pose_adaptor import CameraPoseEncoder
 from cameractrl.pipelines.pipeline_animation import CameraCtrlPipeline
 from cameractrl.utils.convert_from_ckpt import convert_ldm_unet_checkpoint
+from .camera_utils import *
 
 class Camera(object):
     def __init__(self, entry):
@@ -296,6 +297,110 @@ class CameraCtrlLoader:
                                 personalized_base_model, f"cuda:{gpu_id}")
         return (pipeline,)
 
+class CameraBasic:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "camera_pose":(["Static","Pan Up","Pan Down","Pan Left","Pan Right","Zoom In","Zoom Out","ACW","CW"],{"default":"Static"}),
+                "speed":("FLOAT",{"default":1.0}),
+                "video_length":("INT",{"default":16}),
+            },
+        }
+
+    RETURN_TYPES = ("CameraPose",)
+    FUNCTION = "run"
+    CATEGORY = "CameraCtrl"
+
+    def run(self,camera_pose,speed,video_length):
+        camera_dict = {
+                "motion":[camera_pose],
+                "mode": "Basic Camera Poses",  # "First A then B", "Both A and B", "Custom"
+                "speed": speed,
+                "complex": None
+                } 
+        motion_list = camera_dict['motion']
+        mode = camera_dict['mode']
+        speed = camera_dict['speed'] 
+        angle = np.array(CAMERA[motion_list[0]]["angle"])
+        T = np.array(CAMERA[motion_list[0]]["T"])
+        RT = get_camera_motion(angle, T, speed, video_length)
+        return (RT,)
+
+class CameraJoin:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "camera_pose1":("CameraPose",),
+                "camera_pose2":("CameraPose",),
+            },
+        }
+
+    RETURN_TYPES = ("CameraPose",)
+    FUNCTION = "run"
+    CATEGORY = "CameraCtrl"
+
+    def run(self,camera_pose1,camera_pose2):
+        RT = combine_camera_motion(camera_pose1, camera_pose2)
+        return (RT,)
+
+class CameraCombine:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "camera_pose1":(["Static","Pan Up","Pan Down","Pan Left","Pan Right","Zoom In","Zoom Out","ACW","CW"],{"default":"Static"}),
+                "camera_pose2":(["Static","Pan Up","Pan Down","Pan Left","Pan Right","Zoom In","Zoom Out","ACW","CW"],{"default":"Static"}),
+                "camera_pose3":(["Static","Pan Up","Pan Down","Pan Left","Pan Right","Zoom In","Zoom Out","ACW","CW"],{"default":"Static"}),
+                "camera_pose4":(["Static","Pan Up","Pan Down","Pan Left","Pan Right","Zoom In","Zoom Out","ACW","CW"],{"default":"Static"}),
+                "speed":("FLOAT",{"default":1.0}),
+                "video_length":("INT",{"default":16}),
+            },
+        }
+
+    RETURN_TYPES = ("CameraPose",)
+    FUNCTION = "run"
+    CATEGORY = "CameraCtrl"
+
+    def run(self,camera_pose1,camera_pose2,camera_pose3,camera_pose4,speed,video_length):
+        angle = np.array(CAMERA[camera_pose1]["angle"]) + np.array(CAMERA[camera_pose2]["angle"]) + np.array(CAMERA[camera_pose3]["angle"]) + np.array(CAMERA[camera_pose4]["angle"])
+        T = np.array(CAMERA[camera_pose1]["T"]) + np.array(CAMERA[camera_pose2]["T"]) + np.array(CAMERA[camera_pose3]["T"]) + np.array(CAMERA[camera_pose4]["T"])
+        RT = get_camera_motion(angle, T, speed, video_length)
+        return (RT,)
+
+class CameraTrajectory:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "camera_pose":("CameraPose",),
+                "fx":("FLOAT",{"default":0.474812461, "min": 0, "max": 1, "step": 0.000000001}),
+                "fy":("FLOAT",{"default":0.844111024, "min": 0, "max": 1, "step": 0.000000001}),
+                "cx":("FLOAT",{"default":0.5, "min": 0, "max": 1, "step": 0.01}),
+                "cy":("FLOAT",{"default":0.5, "min": 0, "max": 1, "step": 0.01}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING","INT",)
+    RETURN_NAMES = ("camera_trajectory","video_length",)
+    FUNCTION = "run"
+    CATEGORY = "CameraCtrl"
+
+    def run(self,camera_pose,fx,fy,cx,cy):
+        #print(camera_pose)
+        camera_pose_list=camera_pose.tolist()
+        trajs=[]
+        for cp in camera_pose_list:
+            traj=[fx,fy,cx,cy,0,0]
+            traj.extend(cp[0])
+            traj.extend(cp[1])
+            traj.extend(cp[2])
+            trajs.append(traj)
+        print(json.dumps(trajs))
+        
+        return (json.dumps(trajs),len(trajs),)
+
 class CameraCtrlRun:
     @classmethod
     def INPUT_TYPES(cls):
@@ -395,4 +500,8 @@ class CameraCtrlRun:
 NODE_CLASS_MAPPINGS = {
     "CameraCtrlLoader":CameraCtrlLoader,
     "CameraCtrlRun":CameraCtrlRun,
+    "CameraBasic":CameraBasic,
+    "CameraJoin":CameraJoin,
+    "CameraCombine":CameraCombine,
+    "CameraTrajectory":CameraTrajectory,
 }
