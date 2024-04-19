@@ -6,7 +6,7 @@ import folder_paths
 comfy_path = os.path.dirname(folder_paths.__file__)
 
 import sys
-cameractrl_path=f'{comfy_path}/custom_nodes/ComfyUI-CameraCtrl'
+cameractrl_path=f'{comfy_path}/custom_nodes/ComfyUI-CameraCtrl-Wrapper'
 sys.path.insert(0,cameractrl_path)
 
 import numpy as np
