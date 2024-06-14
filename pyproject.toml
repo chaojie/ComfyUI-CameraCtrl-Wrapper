@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-cameractrl-wrapper"
+description = "ComfyUI-CameraCtrl-Wrapper"
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["diffusers", "xformers", "imageio", "imageio[ffmpeg]", "opencv-python", "transformers", "gdown", "einops", "decord", "omegaconf", "safetensors", "gradio", "wandb", "termcolor"]
+
+[project.urls]
+Repository = "https://github.com/chaojie/ComfyUI-CameraCtrl-Wrapper"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-CameraCtrl-Wrapper"
+Icon = ""
