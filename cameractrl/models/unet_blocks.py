@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from einops import rearrange, repeat
 from diffusers.models.resnet import Downsample2D, Upsample2D, ResnetBlock2D
-from diffusers.models.transformer_2d import Transformer2DModel
+from diffusers.models.transformers.transformer_2d import Transformer2DModel
 
 from cameractrl.models.motion_module import get_motion_module
 
